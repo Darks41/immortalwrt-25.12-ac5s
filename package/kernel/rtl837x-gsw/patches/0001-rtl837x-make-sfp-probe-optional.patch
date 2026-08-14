@@ -1,0 +1,24 @@
+diff --git a/src/rtl837x_mdio.c b/src/rtl837x_mdio.c
+index 4463758..c27fd57 100644
+--- a/src/rtl837x_mdio.c
++++ b/src/rtl837x_mdio.c
+@@ -846,7 +846,18 @@ static int rtl837x_gsw_probe(struct mdio_device *mdiodev)
+ 		rtl837x_gpiochip_init(gsw);
+ #endif /* CONFIG_GPIOLIB */
+ 
+-	rtl837x_sfp_probe(gsw);
++	/*
++	 * SFP support is optional: only probe when a "sfp" phandle is present
++	 * in the device node. Without it, skip silently instead of printing a
++	 * misleading "unable to attach SFP bus" error.
++	 *
++	 * Note: full SFP cage management (hotplug / EEPROM / LOS) requires an
++	 * I2C bus to the SFP EEPROM. On boards where the SFP is connected via a
++	 * 10G PHY (e.g. RTL8224N) and no SFP EEPROM I2C is wired to the switch,
++	 * a fixed serdes mode (see rtl837x,sds0mode) is used instead.
++	 */
++	if (of_find_property(np, "sfp", NULL))
++		rtl837x_sfp_probe(gsw);
+ 
+ 	rtl837x_debug_proc_init(gsw);
+ 	rtl837x_status_check_work_init(gsw);
