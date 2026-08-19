@@ -1,0 +1,64 @@
+fix: port_pvid array too small for RTL8373N (9 ports) + keep default VLAN 1
+
+RTL8373N exposes 9 ports (0-8), but port_pvid was sized for 6 (RTL8372N).
+rtl837x_sw_apply_config() reads gsw->port_pvid[6..8] out of bounds and
+picks up struct-garbage PVIDs (e.g. flow_control_map / global_vlan_enable /
+default_work_delay_ms), which leaves switch ports with invalid PVIDs and
+breaks forwarding on the affected ports.  Size the array for the maximum
+port count the driver can handle.
+
+Additionally, rtk_vlan_reset() in rtl837x_sw_apply_config() wiped the
+VLAN 1 (all ports untagged, PVID 1) table that rtk_vlan_init() had just
+built, and with no valid swconfig VLAN entries the switch was left with an
+empty VLAN table and PVID 0 -> every frame dropped -> LAN dead until an
+external 'config switch' section re-created the VLAN.  Skip the reset when
+there are no valid VLAN entries so the driver's no-config default matches
+the transparent behaviour of the vendor closed-source driver.
+
+diff --git a/src/rtl837x_common.h b/src/rtl837x_common.h
+index cd17de8..ce24a72 100644
+--- a/src/rtl837x_common.h
++++ b/src/rtl837x_common.h
+@@ -113,7 +113,7 @@ struct rtk_gsw {
+ 
+ 	char buf[4096];
+ 
+-	uint16_t port_pvid[6];  // 端口PVID配置
++	uint16_t port_pvid[16];  // 端口PVID配置
+ 
+ 	uint16_t flow_control_map; // 流控配置位图
+ 	bool global_vlan_enable;
+diff --git a/src/rtl837x_swconfig.c b/src/rtl837x_swconfig.c
+index 4e2b32b..7700a23 100644
+--- a/src/rtl837x_swconfig.c
++++ b/src/rtl837x_swconfig.c
+@@ -112,8 +112,17 @@ static int rtl837x_sw_apply_config(struct switch_dev *swdev)
+ 	if (gsw->global_vlan_enable)
+ 	{
+ 		dev_info(gsw->dev, "rtl837x Apply Vlan config\n");
+-		// 重置VLAN配置
+-		rtk_vlan_reset();
++		// 无有效VLAN条目时不重置, 保留 rtk_vlan_init 建立的默认 VLAN1 全端口配置
++		bool has_vlan_entry = false;
++		for (int vlan_id = 0; vlan_id < swdev->vlans; vlan_id++) {
++			if (gsw->vlan_table[vlan_id].valid == 1) {
++				has_vlan_entry = true;
++				break;
++			}
++		}
++
++		if (has_vlan_entry)
++			rtk_vlan_reset();
+ 		
+ 		// 设置所有VLAN条目
+ 		for (int vlan_id = 0; vlan_id < swdev->vlans; vlan_id++) {
+@@ -704,6 +713,9 @@ int rtl837x_swconfig_init(struct rtk_gsw *gsw)
+ 	gsw->global_vlan_enable = true; 
+ 	gsw->flow_control_map = 0xF0; //启用所有端口的autoNegoAbility
+ 
++	for (int i = 0; i < gsw->num_ports; i++)
++		gsw->port_pvid[i] = 1; // 默认 PVID = 1, 与 rtk_vlan_init 的默认 VLAN 1 一致
++
+ 	rtl837x_sw_apply_config(dev);
+ 	return err;
+ }

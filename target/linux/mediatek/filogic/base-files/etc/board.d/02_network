@@ -164,8 +164,6 @@ mediatek_setup_interfaces()
 		ucidef_set_interfaces_lan_wan eth0 eth1
 		;;
 	bazis,ax3000wm|\
-	beeconmini,seed-ac5s|\
-	beeconmini,seed-ac5s-nor|\
 	cudy,m3000-v1|\
 	cudy,m3000-v1-ubootmod|\
 	cudy,m3000-v2-yt8821|\
@@ -181,6 +179,12 @@ mediatek_setup_interfaces()
 	glinet,gl-xe3000|\
 	openembed,som7981|\
 	openwrt,one)
+		ucidef_set_interfaces_lan_wan eth1 eth0
+		;;
+	beeconmini,seed-ac5s|\
+	beeconmini,seed-ac5s-nor)
+		ucidef_add_switch "switch0" \
+			"0:lan" "1:lan" "2:lan" "3:lan" "4:lan" "5:lan" "6:lan" "8:lan" "7u@eth1"
 		ucidef_set_interfaces_lan_wan eth1 eth0
 		;;
 	dlink,aquila-pro-ai-e30-a1|\

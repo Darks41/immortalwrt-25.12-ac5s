@@ -1930,7 +1930,7 @@ define Device/beeconmini_seed-ac5s
   DEVICE_DTS := mt7987a-beeconmini-seed-ac5s
   DEVICE_DTS_DIR := ../dts
   DEVICE_PACKAGES := kmod-fs-f2fs kmod-fs-ext4 mkf2fs e2fsprogs nvme-cli \
-	kmod-nvme kmod-switch-rtl837x kmod-usb3 mt7987-2p5g-phy-firmware \
+	kmod-nvme kmod-switch-rtl837x swconfig kmod-usb3 mt7987-2p5g-phy-firmware \
 	kmod-phy-airoha-en8811h
   IMAGE/sysupgrade.bin := sysupgrade-tar | append-metadata
 endef
@@ -1943,7 +1943,7 @@ define Device/beeconmini_seed-ac5s-nor
   DEVICE_DTS := mt7987a-beeconmini-seed-ac5s-nor
   DEVICE_DTS_DIR := ../dts
   DEVICE_PACKAGES := kmod-fs-f2fs kmod-fs-ext4 mkf2fs e2fsprogs nvme-cli \
-	kmod-nvme kmod-switch-rtl837x kmod-usb3 mt7987-2p5g-phy-firmware \
+	kmod-nvme kmod-switch-rtl837x swconfig kmod-usb3 mt7987-2p5g-phy-firmware \
 	kmod-phy-airoha-en8811h
   IMAGES := sysupgrade.bin
   IMAGE_SIZE := 30336k
