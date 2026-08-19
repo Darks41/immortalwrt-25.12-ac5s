@@ -222,6 +222,8 @@
 	 *  - rtl837x,sds0mode = "10g-qxg": 运行态 0x7B20=0x0b4d, SDS0 mode=0xD
 	 *        (10GUSXG) + sub-mode 2 — 与开放驱动 "10g-qxg" 写入的字节完全一致
 	 *        (SDS0 接 RTL8224N 10G PHY → SFP+ 笼)。
+	 *  - SFP+ 默认速率 = 10G: sds0mode "10g-qxg" 固定 (与官方固件一致, 无协商);
+	 *        10G 光模块需接对端设备才有 link (无对端无 link 属正常), 2.5G 光模块不协商。
 	 *  - rtl837x,sds1mode = "10g-kr": 运行态 SDS1 mode=0x1A (10GR)。
 	 *  - reset-gpios: pio8 GPIO_ACTIVE_HIGH — 官方 DTS mediatek,reset-pin=<&pio 8 0>;
 	 *        运行态 debugfs gpio-520 "mediatek,reset-pin" out hi (高=运行)。
