@@ -281,6 +281,7 @@ platform_do_upgrade() {
 		CI_UBIPART="ubi"
 		nand_do_upgrade "$1"
 		;;
+	beeconmini,seed-ac5s-nor|\
 	cudy,re3000-v1|\
 	cudy,wr3000-v1|\
 	kebidumei,ax3000-u22|\
@@ -373,6 +374,12 @@ platform_do_upgrade() {
 			nand_do_upgrade "$1"
 			;;
 		esac
+		;;
+	beeconmini,seed-ac5s)
+		CI_KERNPART="kernel"
+		CI_ROOTPART="rootfs"
+		CI_DATAPART="rootfs_data"
+		emmc_do_upgrade "$1"
 		;;
 	*)
 		nand_do_upgrade "$1"
@@ -481,6 +488,8 @@ platform_copy_config() {
 	acer,vero-w6m|\
 	airpi,ap3000m|\
 	arcadyan,mozart|\
+	beeconmini,seed-ac5s|\
+	beeconmini,seed-ac5s-nor|\
 	glinet,gl-mt2500|\
 	glinet,gl-mt2500-airoha|\
 	glinet,gl-mt6000|\
