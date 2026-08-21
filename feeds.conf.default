@@ -1,6 +1,6 @@
-src-git packages https://github.com/Darks41/packages.git
-#src-git packages https://github.com/immortalwrt/packages.git
-src-git luci https://github.com/immortalwrt/luci.git^90bf01642bb305eb24da1d1acbab01931e198266
+#src-git packages https://github.com/Darks41/packages.git
+src-git packages https://github.com/immortalwrt/packages.git
+src-git luci https://github.com/immortalwrt/luci.git
 src-git routing https://github.com/openwrt/routing.git
 src-git telephony https://github.com/openwrt/telephony.git
 src-git video https://github.com/openwrt/video.git
