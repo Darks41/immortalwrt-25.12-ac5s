@@ -84,7 +84,7 @@
 
 		sfp {
 			gpio-export,name = "sfp_power";
-			gpio-export,output = <0>;
+			gpio-export,output = <1>;
 			gpios = <&pio 11 GPIO_ACTIVE_LOW>;
 		};
 	};

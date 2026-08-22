@@ -183,9 +183,12 @@ mediatek_setup_interfaces()
 		;;
 	beeconmini,seed-ac5s|\
 	beeconmini,seed-ac5s-nor)
+		# 官方固件布局: LAN 电口 port0-6 -> VLAN1 (eth1.1/br-lan),
+		# SFP+ port8 独立为 wan2 (VLAN2/eth1.2), CPU 口 port7 双 VLAN tagged
 		ucidef_add_switch "switch0" \
-			"0:lan" "1:lan" "2:lan" "3:lan" "4:lan" "5:lan" "6:lan" "8:lan" "7u@eth1"
-		ucidef_set_interfaces_lan_wan eth1 eth0
+			"0:lan" "1:lan" "2:lan" "3:lan" "4:lan" "5:lan" "6:lan" "8:wan2" "7t@eth1"
+		ucidef_set_interfaces_lan_wan "eth1.1" "eth0"
+		ucidef_set_interface "wan2" device "eth1.2" protocol "none"
 		;;
 	dlink,aquila-pro-ai-e30-a1|\
 	netis,eap930-v1)
