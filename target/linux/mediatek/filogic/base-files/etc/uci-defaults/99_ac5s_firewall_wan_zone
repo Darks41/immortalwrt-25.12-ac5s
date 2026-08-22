@@ -1,0 +1,31 @@
+#!/bin/sh
+# BeeconMini SEED AC5S: add wan2/wan26 to the "wan" firewall zone so the
+# SFP+ interface (wan2, VLAN2/eth1.2) gets NAT/masquerade, matching the
+# official firmware's firewall zone membership. Idempotent (uci add_list
+# would otherwise duplicate entries on every boot).
+# NOTE: the modem interface is intentionally NOT handled here - it is not
+# created by the build tree (user-managed on the device).
+. /lib/functions.sh
+
+case "$(board_name)" in
+	beeconmini,seed-ac5s|\
+	beeconmini,seed-ac5s-nor)
+		zone_idx=0
+		while uci -q get "firewall.@zone[$zone_idx]" >/dev/null 2>&1; do
+			if [ "$(uci -q get "firewall.@zone[$zone_idx].name")" = "wan" ]; then
+				for net in wan2 wan26; do
+					found=0
+					for existing in $(uci -q get "firewall.@zone[$zone_idx].network"); do
+						[ "$existing" = "$net" ] && found=1
+					done
+					[ "$found" = "0" ] && uci -q add_list "firewall.@zone[$zone_idx].network=$net"
+				done
+				uci -q commit firewall
+				break
+			fi
+			zone_idx=$((zone_idx + 1))
+		done
+		;;
+esac
+
+exit 0
