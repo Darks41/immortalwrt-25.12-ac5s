@@ -72,13 +72,13 @@
 
 		usb {
 			gpio-export,name = "usb_power";
-			gpio-export,output = <0>;
+			gpio-export,output = <1>;
 			gpios = <&pio 6 GPIO_ACTIVE_LOW>;
 		};
 
 		fan {
 			gpio-export,name = "fan_power";
-			gpio-export,output = <0>;
+			gpio-export,output = <1>;
 			gpios = <&pio 10 GPIO_ACTIVE_HIGH>;
 		};
 
