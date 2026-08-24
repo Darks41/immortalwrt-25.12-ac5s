@@ -68,7 +68,7 @@ span.appendChild(E('em',_('(no interfaces attached)')));return span;}
 function renderNetworksTooltip(pmap){const res=[null];const zmap={};const zones=(pmap&&Array.isArray(pmap.zones))?pmap.zones:[];const networks=(pmap&&Array.isArray(pmap.networks))?pmap.networks:[];for(let pmz of zones){const networknames=pmz.getNetworks();for(let nn of networknames)
 zmap[nn]=pmz.getName();}
 for(let pmn of networks)
-res.push(E('br'),renderNetworkBadge(pmn,zmap[pmn.getName()]));if(res.length>1)
+res.push(E('br'),renderNetworkBadge(pmn,zmap[pmn.getName()]));for(let pmz of zones){const members=(pmz.getNetworks&&pmz.getNetworks())||[];if(members.length)res.push(E('br'),E('span',{},'Zone '+pmz.getName()+': '+members.join(', ')));}if(res.length>1)
 res[0]=N_((res.length-1)/2,'Part of network:','Part of networks:');else
 res[0]=_('Port is not part of any network');return E([],res);}
 return baseclass.extend({title:_('Port status'),load(){return Promise.all([L.resolveDefault(callGetBuiltinEthernetPorts(),[]),L.resolveDefault(fs.read('/etc/board.json'),'{}'),firewall.getZones(),network.getNetworks(),uci.load('network')]).then((data)=>{const builtinPorts=data[0]||[];const board=JSON.parse(data[1]||'{}');const allPorts=new Set();builtinPorts.forEach((port)=>{if(port.device)
@@ -76,7 +76,7 @@ allPorts.add(port.device);});if(allPorts.size===0&&board.network){['lan','wan'].
 board.network[role].ports.forEach((p)=>allPorts.add(p));else if(board.network[role].device)
 allPorts.add(board.network[role].device);}});}if(board&&board.model&&board.model.id==='beeconmini,seed-ac5s'){['eth0','eth1.2','eth1.1'].forEach((d)=>allPorts.add(d));}
 const psePromises=Array.from(allPorts).map((devname)=>{return L.resolveDefault(callNetworkDeviceStatus(devname),{}).then((status)=>{return{name:devname,pse:status.pse||null};});});return Promise.all(psePromises).then((pseResults)=>{const pseMap={};pseResults.forEach((r)=>{if(r.pse)
-pseMap[r.name]=r.pse;});data.push(pseMap);return Promise.all((board&&board.model&&board.model.id==='beeconmini,seed-ac5s')?[0,1,2,3,4,5,6,8].map((p)=>L.resolveDefault(callGetSwconfigMib(p),{})):[]).then((mibs)=>{const mibMap={};mibs.forEach((m,i)=>{if(m&&m.result)mibMap[[0,1,2,3,4,5,6,8][i]]=m.result;});data.push(mibMap);return data;});});});},render(data){const board=JSON.parse(data[1]),port_map=buildInterfaceMapping(data[2],data[3]),pseMap=data[5]||{};let known_ports=[];if(Array.isArray(data[0])&&data[0].length>0){known_ports=data[0].map(port=>({...port,netdev:network.instantiateDevice(port.device)}));}
+pseMap[r.name]=r.pse;});data.push(pseMap);return Promise.all((board&&board.model&&board.model.id==='beeconmini,seed-ac5s')?[0,1,2,3,4,5,6,8].map((p)=>L.resolveDefault(callGetSwconfigMib(p),{})):[]).then((mibs)=>{const mibMap={};mibs.forEach((m,i)=>{if(m&&m.ifInOctets!=null)mibMap[[0,1,2,3,4,5,6,8][i]]=m;});data.push(mibMap);return data;});});});},render(data){const board=JSON.parse(data[1]),port_map=buildInterfaceMapping(data[2],data[3]),pseMap=data[5]||{};let known_ports=[];if(Array.isArray(data[0])&&data[0].length>0){known_ports=data[0].map(port=>({...port,netdev:network.instantiateDevice(port.device)}));}
 else{if(L.isObject(board)&&L.isObject(board.network)){for(let k='lan';k!=null;k=(k=='lan')?'wan':null){if(!L.isObject(board.network[k]))
 continue;if(Array.isArray(board.network[k].ports))
 for(let i=0;i<board.network[k].ports.length;i++)
