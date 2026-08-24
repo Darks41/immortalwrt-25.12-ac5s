@@ -1,0 +1,10 @@
+{
+	"ac5s-mib": {
+		"description": "Grant LuCI access to the ac5s switch MIB RPC object",
+		"read": {
+			"ubus": {
+				"ac5s": [ "getSwconfigMib" ]
+			}
+		}
+	}
+}
