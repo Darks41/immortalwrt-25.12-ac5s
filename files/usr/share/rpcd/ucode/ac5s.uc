@@ -36,7 +36,7 @@ return {
 				const swc = popen(`swconfig dev switch0 port ${p} get mib 2>&1`);
 				if (swc) {
 					for (let line = swc.read('line'); length(line); line = swc.read('line')) {
-						let m = match(line, /^(ifInOctets|ifOutOctets|ifInUcastPkts|ifOutUcastPkts|ifInMulticastPkts|ifOutMulticastPkts|ifInBroadcastPkts|ifOutBroadcastPkts)\s*:\s*(\d+)/);
+						let m = match(line, /^(ifInOctets|ifOutOctets|ifInUcastPkts|ifOutUcastPkts|ifInMulticastPkts|ifOutMulticastPkts|ifInBroadcastPkts|ifOutBroadcastPkts|ifOutDiscards)\s*:\s*(\d+)/);
 
 						if (m)
 							res[m[1]] = int(m[2]);
