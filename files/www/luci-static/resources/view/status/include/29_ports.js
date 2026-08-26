@@ -515,8 +515,18 @@ return baseclass.extend({
 				['lan2', 6], ['lan3', 5], ['lan4', 4], ['lan5', 3], ['lan6', 2], ['lan7', 1], ['lan8', 0]
 			];
 
+			// Interface-layer reference for the EN8811H WAN: the L3 device the
+			// "Network > Interfaces" page reports for the 'wan' interface. With
+			// DHCP/static this is eth0 itself (identical to the physical-port
+			// counter); if 'wan' is switched to PPPoE it resolves to the
+			// pppoe-wan session instead, mirroring sfp_wan. Falls back to eth0
+			// when no 'wan' network is defined.
+			const wanNet = nmap['wan'];
+			const wanRef = (wanNet && wanNet.getDevice) ? wanNet.getDevice() : null;
+
 			known_ports = [
-				{ role: 'wan', title: 'wan', device: 'eth0', zone: 'wan', netdev: network.instantiateDevice('eth0'), pmap: mkpmap(['wan']) }
+				{ role: 'wan', title: 'wan', device: 'eth0', zone: 'wan', netdev: network.instantiateDevice('eth0'),
+				  refnetdev: wanRef || network.instantiateDevice('eth0'), pmap: mkpmap(['wan']) }
 			];
 
 			for (let i = 0; i < swlan.length; i++)
@@ -595,7 +605,9 @@ return baseclass.extend({
 			// and tooltip come from the same source, so they always agree). For
 			// ports without a switch port (e.g. the EN8811H WAN), fall back to the
 			// netdev counters. A transparent CPU-layer reference is appended so the
-			// physical-vs-interface difference is visible instead of hidden.
+			// physical-vs-interface difference is visible instead of hidden - also
+			// for the WAN card, where the reference is the 'wan' interface's L3
+			// device (eth0 for DHCP/static, pppoe-wan for PPPoE).
 			if (port.mibPort != null && mib) {
 				statsContent.push(E('span', { 'class': 'cbi-tooltip' }, [
 					formatMibStats(mib),
@@ -603,7 +615,8 @@ return baseclass.extend({
 				]));
 			}
 			else if (port.netdev) {
-				statsContent.push(E('span', { 'class': 'cbi-tooltip' }, formatStats(port.netdev, pse)));
+				const ref = formatNetdevReference(port.refnetdev);
+				statsContent.push(E('span', { 'class': 'cbi-tooltip' }, (ref != null) ? [formatStats(port.netdev, pse), ref] : formatStats(port.netdev, pse)));
 			}
 
 			let spd = 0, dpx = null;
