@@ -302,9 +302,13 @@ function formatStats(portdev, pse) {
 	return ui.itemlist(E('span'), items);
 }
 
-// Build the hover tooltip from the physical-port MIB counters (authoritative
-// per-port traffic, includes frames forwarded inside the switch that never
-// reach the CPU). Mirrors the field layout of formatStats() for consistency.
+// Build the hover tooltip from the physical-port MIB counters. It must match
+// the standard formatStats() field layout EXACTLY - Received bytes/packets/
+// multicast, Receive errors/dropped, Transmitted bytes/packets, Transmit
+// errors/dropped, Collisions - so that every card (wan / lan2..lan8 / sfp_wan)
+// shows the same hover fields, no more and no less. The provided MIB field set
+// has no receive/transmit-error or receive-dropped counters, so those mirror
+// rows report 0 (the WAN card takes them from its netdev instead).
 function formatMibStats(mib) {
 	const rxp = (mib.ifInUcastPkts || 0) + (mib.ifInMulticastPkts || 0) + (mib.ifInBroadcastPkts || 0);
 	const txp = (mib.ifOutUcastPkts || 0) + (mib.ifOutMulticastPkts || 0) + (mib.ifOutBroadcastPkts || 0);
@@ -313,10 +317,13 @@ function formatMibStats(mib) {
 		_('Received bytes'), '%1024mB'.format(mib.ifInOctets || 0),
 		_('Received packets'), '%1000mPkts.'.format(rxp),
 		_('Received multicast'), '%1000mPkts.'.format(mib.ifInMulticastPkts || 0),
+		_('Receive errors'), '%1000mPkts.'.format(0),
+		_('Receive dropped'), '%1000mPkts.'.format(0),
 		_('Transmitted bytes'), '%1024mB'.format(mib.ifOutOctets || 0),
 		_('Transmitted packets'), '%1000mPkts.'.format(txp),
-		_('Transmitted multicast'), '%1000mPkts.'.format(mib.ifOutMulticastPkts || 0),
-		_('Transmit dropped'), '%1000mPkts.'.format(mib.ifOutDiscards || 0)
+		_('Transmit errors'), '%1000mPkts.'.format(0),
+		_('Transmit dropped'), '%1000mPkts.'.format(mib.ifOutDiscards || 0),
+		_('Collisions seen'), 0
 	]);
 }
 
@@ -601,13 +608,14 @@ return baseclass.extend({
 				statsContent.push(psePower);
 			}
 
-			// Hover tooltip. Physical-port MIB is authoritative (constant display
-			// and tooltip come from the same source, so they always agree). For
-			// ports without a switch port (e.g. the EN8811H WAN), fall back to the
-			// netdev counters. A transparent CPU-layer reference is appended so the
-			// physical-vs-interface difference is visible instead of hidden - also
-			// for the WAN card, where the reference is the 'wan' interface's L3
-			// device (eth0 for DHCP/static, pppoe-wan for PPPoE).
+			// Hover tooltip. Every card (wan / lan2..lan8 / sfp_wan) renders the
+			// same field layout as the WAN card: the received/transmitted bytes,
+			// packets, multicast, errors, dropped and collisions rows, plus a
+			// transparent "Interface layer (<dev>)" reference block. For switch
+			// ports (LAN/sfp_wan) the rows come from the physical-port MIB (so
+			// they agree with the always-visible per-port constant ▲/▼); for the
+			// EN8811H WAN they come from its netdev. No extra field is shown and
+			// none is dropped between cards.
 			if (port.mibPort != null && mib) {
 				statsContent.push(E('span', { 'class': 'cbi-tooltip' }, [
 					formatMibStats(mib),

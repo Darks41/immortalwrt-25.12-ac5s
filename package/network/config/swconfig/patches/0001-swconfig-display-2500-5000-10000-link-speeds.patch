@@ -1,7 +1,7 @@
-diff --git a/src/cli.c b/src/cli.c
+diff --git a/cli.c b/cli.c
 index 2601f346db1..b4bc959b9f9 100644
---- a/src/cli.c
-+++ b/src/cli.c
+--- a/cli.c
++++ b/cli.c
 @@ -94,6 +94,12 @@ speed_str(int speed)
  		return "100baseT";
  	case 1000:
