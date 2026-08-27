@@ -1,0 +1,22 @@
+diff --git a/src/rtl837x_mdio.c b/src/rtl837x_mdio.c
+index 4463758..9d0c15a 100644
+--- a/src/rtl837x_mdio.c
++++ b/src/rtl837x_mdio.c
+@@ -565,14 +565,14 @@ static void rtl837x_sfp_detach(void *upstream, struct sfp_bus *bus)
+ 	dev_dbg(gsw->dev, "SFP module detach\n");
+ }
+ 
+-int rtl837x_sfp_module_start(void *upstream)
++static int rtl837x_sfp_module_start(void *upstream)
+ {
+ 	struct rtk_gsw *gsw = upstream;
+ 	dev_dbg(gsw->dev, "SFP module start\n");
+ 	return 0;
+ }
+ 
+-void rtl837x_sfp_module_stop(void *upstream)
++static void rtl837x_sfp_module_stop(void *upstream)
+ {
+ 	struct rtk_gsw *gsw = upstream;
+ 	dev_dbg(gsw->dev, "SFP module stop\n");
+ }
