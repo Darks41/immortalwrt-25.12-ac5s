@@ -25,8 +25,17 @@ return {
 					if (m)
 						res.link = m[1];
 					m = match(l, /speed:(\S+)/);
-					if (m)
-						res.speed = m[1];
+					if (m) {
+						// swconfig speed_str() reports standard rates as "<n>baseT"
+						// (10baseT / 100baseT / 1000baseT) and the >1G rates as bare
+						// numbers (2500 / 5000 / 10000 after the swconfig speed patch).
+						// Normalize to a plain number so the LuCI port-status page
+						// formats "1 GbE" / "100 Mbps" / ... instead of leaving every
+						// sub-2.5G link at "Connected".
+						let s = m[1];
+						let base = match(s, /^(\d+)baseT$/);
+						res.speed = base ? int(base[1]) : (match(s, /^\d+$/) ? int(s) : s);
+					}
 					let d = match(l, /(\w+)-duplex/);
 					if (d)
 						res.duplex = d[1];
