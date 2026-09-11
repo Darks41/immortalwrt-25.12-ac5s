@@ -63,33 +63,24 @@
 		};
 	};
 
-	/*
-	 * 供电控制（pio6=USB 5V、pio10=风扇、pio11=SFP+ 猫棒）
-	 * gpio-export,output 为**原始电平**语义（ACTIVE_LOW 不取反，见 eMMC 变体同段注释）：
-	 * ACTIVE_LOW 引脚写 0 = 拉低 = 供电；ACTIVE_HIGH 引脚写 1 = 拉高 = 开启。
-	 * 与 eMMC 变体保持一致（USB/SFP 常供电、风扇默认常转）。
-	 */
 	gpio-export {
 		compatible = "gpio-export";
 		#size-cells = <0>;
 
 		usb {
 			gpio-export,name = "usb_power";
-			/* ACTIVE_LOW: 0 = 供电 */
 			gpio-export,output = <0>;
 			gpios = <&pio 6 GPIO_ACTIVE_LOW>;
 		};
 
 		fan {
 			gpio-export,name = "fan_power";
-			/* ACTIVE_HIGH: 1 = 常转 */
-			gpio-export,output = <1>;
+			gpio-export,output = <0>;
 			gpios = <&pio 10 GPIO_ACTIVE_HIGH>;
 		};
 
 		sfp {
 			gpio-export,name = "sfp_power";
-			/* ACTIVE_LOW: 0 = 供电 */
 			gpio-export,output = <0>;
 			gpios = <&pio 11 GPIO_ACTIVE_LOW>;
 		};
