@@ -66,25 +66,39 @@
 		};
 	};
 
+	/*
+	 * 供电控制（pio6=USB 5V、pio10=风扇、pio11=SFP+ 猫棒）
+	 *
+	 * 注意 gpio-export,output 是**原始电平**语义（不经过 ACTIVE_LOW 取反）：
+	 * 内核 gpio-export 处理见 target/linux/generic/hack-6.18/800-GPIO-add-named-gpio-exports.patch，
+	 * 其对 output 调用 gpiod_direction_output_raw()；OpenWrt 上游提交
+	 * 8f3285dbd0a "kernel: gpio-export: restore prior direction setup" 明确恢复该历史语义。
+	 * 因此 ACTIVE_LOW 引脚要"上电"必须写 0（拉低=有效），ACTIVE_HIGH 引脚写 1。
+	 * 运行时逻辑值可读 /sys/class/gpio/{usb,fan,sfp}_power/value，有效=1。
+	 * 此处与官方 DTS 一致（官方 usb/sfp 即为 0）。
+	 */
 	gpio-export {
 		compatible = "gpio-export";
 		#size-cells = <0>;
 
 		usb {
 			gpio-export,name = "usb_power";
-			gpio-export,output = <1>;
+			/* ACTIVE_LOW: 原始 0 = 拉低 = 供电 */
+			gpio-export,output = <0>;
 			gpios = <&pio 6 GPIO_ACTIVE_LOW>;
 		};
 
 		fan {
 			gpio-export,name = "fan_power";
+			/* ACTIVE_HIGH: 原始 1 = 拉高 = 风扇常转 */
 			gpio-export,output = <1>;
 			gpios = <&pio 10 GPIO_ACTIVE_HIGH>;
 		};
 
 		sfp {
 			gpio-export,name = "sfp_power";
-			gpio-export,output = <1>;
+			/* ACTIVE_LOW: 原始 0 = 拉低 = 给猫棒供电 */
+			gpio-export,output = <0>;
 			gpios = <&pio 11 GPIO_ACTIVE_LOW>;
 		};
 	};
