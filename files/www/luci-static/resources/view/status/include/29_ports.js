@@ -27,6 +27,12 @@ const callGetSwconfigMib = rpc.declare({
 	expect: { result: {} }
 });
 
+// Switch ports queried for the AC5S port-status page: the 7 LAN copper ports
+// (switch ports 0-6) plus the SFP+ port (switch port 8). Port 7 is the CPU
+// uplink and carries no front-panel connector. Kept in one place so the
+// request list and the result->port map can never drift apart.
+const AC5S_SWITCH_MIB_PORTS = [0, 1, 2, 3, 4, 5, 6, 8];
+
 function isString(v) {
 	return typeof(v) === 'string' && v !== '';
 }
@@ -448,12 +454,12 @@ return baseclass.extend({
 
 				data.push(pseMap);
 
-				return Promise.all((board && board.model && board.model.id === 'beeconmini,seed-ac5s') ? [0, 1, 2, 3, 4, 5, 6, 8].map((p) => L.resolveDefault(callGetSwconfigMib(p), {})) : []).then((mibs) => {
+				return Promise.all((board && board.model && board.model.id === 'beeconmini,seed-ac5s') ? AC5S_SWITCH_MIB_PORTS.map((p) => L.resolveDefault(callGetSwconfigMib(p), {})) : []).then((mibs) => {
 					const mibMap = {};
 
 					mibs.forEach((m, i) => {
 						if (m && (m.link != null || m.ifInOctets != null))
-							mibMap[[0, 1, 2, 3, 4, 5, 6, 8][i]] = m;
+							mibMap[AC5S_SWITCH_MIB_PORTS[i]] = m;
 					});
 
 					data.push(mibMap);
