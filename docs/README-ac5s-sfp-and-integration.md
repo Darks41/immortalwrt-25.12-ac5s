@@ -1,5 +1,12 @@
 # BeeconMini SEED AC5S × immortalwrt (kernel 6.18) 集成层
 
+> **历史文档（2026-08 初版 overlay 说明）**：本文写于「用 `apply.sh` + `newfiles/` + `patches/`
+> 覆盖上游树」的阶段，目录结构与路径（如 `/home/lwj/immortalwrt-6.18-ac5s`）已不适用。
+> 现行源码就在本仓库对应目录（`package/kernel/rtl837x-gsw/`、`target/linux/mediatek/dts/` …），
+> **最新结论、实机数据与操作记录以工作区 `docs/BeeconMini-AC5S固件构建与驱动集成-工作记录-6.18路线.md` 为准**。
+> 另：第 1 条「默认无配置时执行 `rtk_vlan_reset()`」已被驱动补丁 0002 修正——现默认保留
+> VLAN1 全端口透明转发（PVID=1），详见该工作记录 2.5。
+
 基于 `/home/lwj/immortalwrt`（immortalwrt master，mediatek 目标，`KERNEL_PATCHVER:=6.18`）
 的 AC5S 驱动/设备集成。**不修改任何现有源文件**：新增文件在 `newfiles/`，对现有
 文件的改动全部以补丁形式放在 `patches/`。

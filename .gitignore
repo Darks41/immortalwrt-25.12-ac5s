@@ -6,6 +6,7 @@
 /.config
 /.config.old
 /ac5s.config
+/ac5s.config.old
 /.toolchain_build_ver
 /bin
 /build_dir
