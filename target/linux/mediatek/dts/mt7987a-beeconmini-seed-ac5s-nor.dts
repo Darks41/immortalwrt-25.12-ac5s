@@ -14,23 +14,16 @@
 
 	aliases {
 		label-mac-device = &gmac0;
-		led-boot = &led_power;
-		led-failsafe = &led_power;
-		led-running = &led_power;
-		led-upgrade = &led_power;
+		led-boot = &led_sys;
+		led-failsafe = &led_sys;
+		led-running = &led_sys;
+		led-upgrade = &led_sys;
 	};
 
 	chosen {
 		bootargs = "console=ttyS0,115200n1 \
 			    earlycon=uart8250,mmio32,0x11000000 \
 			    pci=pcie_bus_perf fstools_ignore_partname=1";
-	};
-
-	aliases {
-		led-boot = &led_sys;
-		led-failsafe = &led_sys;
-		led-running = &led_sys;
-		led-upgrade = &led_sys;
 	};
 
 	gpio-keys {
