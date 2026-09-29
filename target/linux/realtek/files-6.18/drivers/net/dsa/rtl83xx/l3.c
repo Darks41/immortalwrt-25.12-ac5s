@@ -990,17 +990,28 @@ static void otto_l3_route_compact(struct otto_l3_ctrl *ctrl, struct otto_l3_rout
 static int otto_l3_nexthop_update(struct otto_l3_ctrl *ctrl, __be32 ip_addr, u64 mac)
 {
 	struct rtl838x_switch_priv *priv = ctrl->priv;
-	struct rhlist_head *tmp, *list;
 	struct otto_l3_route *r;
+	bool known;
 
+	/* The lookup runs in the section the rhashtable asks for and ends
+	 * there: on a kernel without preemptible RCU that section is
+	 * preempt_disable(), and every table op below it sleeps on a mutex.
+	 * Only whether the gateway is known leaves that section, so no
+	 * rhashtable pointer outlives it. The routes it would have walked are
+	 * the ones on the driver's own list with that gateway, and the work
+	 * queue that runs this is single threaded, which is what lets the rest
+	 * of the driver walk that list with no lock.
+	 */
 	rcu_read_lock();
-	list = rhltable_lookup(&ctrl->routes, &ip_addr, otto_l3_route_ht_params);
-	if (!list) {
-		rcu_read_unlock();
+	known = rhltable_lookup(&ctrl->routes, &ip_addr, otto_l3_route_ht_params);
+	rcu_read_unlock();
+	if (!known)
 		return -ENOENT;
-	}
 
-	rhl_for_each_entry_rcu(r, tmp, list, linkage) {
+	list_for_each_entry(r, &ctrl->routes_list, list) {
+		if (r->gw_ip != ip_addr)
+			continue;
+
 		dev_dbg(ctrl->dev, "%s: Setting up fwding: ip %pI4, GW mac %016llx\n",
 			__func__, &ip_addr, mac);
 
@@ -1078,7 +1089,6 @@ static int otto_l3_nexthop_update(struct otto_l3_ctrl *ctrl, __be32 ip_addr, u64
 			priv->r->pie_rule_write(priv, r->pr.id, &r->pr);
 		}
 	}
-	rcu_read_unlock();
 
 	return 0;
 }
@@ -1194,7 +1204,7 @@ static void otto_l3_route_remove(struct otto_l3_ctrl *ctrl, struct otto_l3_route
 		clear_bit(r->id - MAX_ROUTES, ctrl->host_route_use_bm);
 	} else {
 		/* If there is a HW representation of the route, delete it */
-		if (ctrl->cfg->route_lookup_hw) {
+		if (ctrl->cfg->route_lookup_hw && r->row >= FIRST_PREFIX_ROW) {
 			/* The route was written at the row we recorded, and a
 			 * route whose gateway never resolved has none. Ask the
 			 * hardware when it is not where we put it.
@@ -1576,9 +1586,7 @@ static int otto_l3_fib_notifier(struct notifier_block *this, unsigned long event
 	struct otto_l3_fib_event_work *fib_work;
 	struct fib_notifier_info *info = ptr;
 
-	if ((info->family != AF_INET && info->family != AF_INET6 &&
-	     info->family != RTNL_FAMILY_IPMR &&
-	     info->family != RTNL_FAMILY_IP6MR))
+	if (info->family != AF_INET && info->family != AF_INET6)
 		return NOTIFY_DONE;
 
 	/* ignore FIB events for HW with missing L3 offloading implementation */
@@ -1654,7 +1662,7 @@ static int otto_l3_netevent_notifier(struct notifier_block *this, unsigned long 
 	struct otto_l3_net_event_work *net_work;
 	struct neighbour *n = ptr;
 	struct net_device *dev;
-	int err, port;
+	int port;
 
 	switch (event) {
 	case NETEVENT_NEIGH_UPDATE:
@@ -1684,8 +1692,6 @@ static int otto_l3_netevent_notifier(struct notifier_block *this, unsigned long 
 		dev_dbg(ctrl->dev, "updating neighbour on port %d, mac %016llx\n",
 			port, net_work->mac);
 		queue_work(priv->wq, &net_work->work);
-		if (err)
-			netdev_warn(dev, "failed to handle neigh update (err %d)\n", err);
 		break;
 	}
 
