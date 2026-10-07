@@ -223,11 +223,15 @@
 	 *  - rtl837x,cpu-port = 7: 官方 dmesg "<rtl8373> port:7 link UP - 2.5Gbps";
 	 *        上行 gmac1→phy15(内部 2.5G 铜 PHY)→交换芯片电口 7; 且 SDS0/1 均
 	 *        配置为 10G 模式 (非上行)。CPU 口不是 serdes 口, 驱动会跳过 serdes 复位。
-	 *  - rtl837x,sds0mode = "10g-qxg": 运行态 0x7B20=0x0b4d, SDS0 mode=0xD
-	 *        (10GUSXG) + sub-mode 2 — 与开放驱动 "10g-qxg" 写入的字节完全一致
-	 *        (SDS0 接 RTL8224N 10G PHY → SFP+ 笼)。
-	 *  - SFP+ 默认速率 = 10G: sds0mode "10g-qxg" 固定 (与官方固件一致, 无协商);
-	 *        10G 光模块需接对端设备才有 link (无对端无 link 属正常), 2.5G 光模块不协商。
+	 *  - rtl837x,sds0mode: 2026-10-07 本地改为 "2500base-x" (SDS0 mode=0x16), 目标 SFP+ 2.5G。
+	 *        原值 "10g-qxg": 运行态 0x7B20=0x0b4d, SDS0 mode=0xD (10GUSXG) + sub-mode 2
+	 *        — 与开放驱动 "10g-qxg" 写入的字节完全一致 (SDS0 接 RTL8224N 10G PHY → SFP+ 笼)。
+	 *  - 为什么改在 DTS 而不是运行期 swconfig: 2026-10-07 实机三轮验证, 运行期改 SDS0 模式
+	 *        (swconfig serdes0_force_mode 22, 或 debugfs 直写 0x7B20=0x356) 都会让交换芯片
+	 *        停止转发 —— 各口 link 仍显示 up 但双向不通, 只能重启, 重启又回退 10G。
+	 *        开机期由 rtl837x_mdio.c:482 rtk_sdsMode_set(0, gsw->sds0mode) 最后写入 0x7B20
+	 *        bits[4:0], 是既有正常路径 (每次开机本就两次改 SDS0)。详见工作记录 §2.26。
+	 *  - 10G 光模块需接对端设备才有 link (无对端无 link 属正常); 2.5G 模块需本项改 2500base-x。
 	 *  - rtl837x,sds1mode = "10g-kr": 运行态 SDS1 mode=0x1A (10GR)。
 	 *  - reset-gpios: pio8 GPIO_ACTIVE_HIGH — 官方 DTS mediatek,reset-pin=<&pio 8 0>;
 	 *        运行态 debugfs gpio-520 "mediatek,reset-pin" out hi (高=运行)。
@@ -240,7 +244,7 @@
 		reg = <29>;
 		reset-gpios = <&pio 8 GPIO_ACTIVE_HIGH>;
 		rtl837x,cpu-port = <7>;
-		rtl837x,sds0mode = "10g-qxg";
+		rtl837x,sds0mode = "2500base-x";
 		rtl837x,sds1mode = "10g-kr";
 		ethernet = <&gmac1>;
 		status = "okay";
