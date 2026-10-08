@@ -224,10 +224,13 @@
 	 *        上行 gmac1→phy15(内部 2.5G 铜 PHY)→交换芯片电口 7; 且 SDS0/1 均
 	 *        配置为 10G 模式 (非上行)。CPU 口不是 serdes 口, 驱动会跳过 serdes 复位。
 	 *  - rtl837x,sds0mode = "10g-qxg" (不是 SFP+ 口, 不要改): 运行态 0x7B20 bits[4:0]=0xD (10GUSXG)
-	 *         + sub-mode 2。SDS0 接 RTL8224N → 4 个 RJ45 LAN 口。2026-10-07 刷机实测: 曾把它改成
-	 *         "2500base-x" 想让 SFP+ 跑 2.5G — 结果 LAN 口全部不通 (电脑插 LAN 口连不上设备)。
-	 *         运行期用 swconfig serdes0_force_mode 22 或 debugfs 直写 0x7B20=0x356 同样会打死转发
-	 *         (各口 link 仍显示 up 但双向不通, 只能重启才恢复)。
+	 *         + sub-mode 2。SDS0 接 RTL8224N → 4 个 RJ45 LAN 口。
+	 *         2026-10-07 曾把它改成 "2500base-x" 想让 SFP+ 跑 2.5G, 当时报 LAN 口全部不通;
+	 *         但 2026-10-08 复核发现设备运行的正是该镜像 (r41889-860ad0e7d5, 实时 DT 本项 =
+	 *         "2500base-x", 运行态 0x7B20=0x356/Serdes0=0x16) 而 LAN 口工作正常 (port 4 up 2500,
+	 *         经 LAN 口 SSH 正常) —— 该 "必杀 LAN" 结论**不稳定复现**, 根因未查清, 不要再当成铁律。
+	 *         行动建议不变: SFP+ 用 sds1mode, 本项保持 "10g-qxg" (改它无收益); 运行期
+	 *         swconfig serdes0_force_mode 22 / debugfs 直写 0x7B20 同属未查清区间, 请勿使用。
 	 *  - SFP+ 笼 = SDS1: 驱动 rtl837x_mdio.c:608-663 rtl837x_sfp_module_insert/remove 只操作 SDS1
 	 *         (10GBASER→10GR, 2500BASEX→2500BASEX, 1000BASEX/SGMII→1000BASEX, 100BASEX→100FX, 拔除→OFF)。
 	 *         本 DTS 里没有 sff,sfp 节点 → 模块识别不工作 → SFP+ 只用 DTS 初值 sds1mode, 不协商速率。
@@ -237,8 +240,11 @@
 	 *         0x0b4d (SDS1=0x1A=10GR)。0x0b4d 只把 SDS1 字段换成 0x16 恰好 = 0x0acd, 与开放驱动写
 	 *         "2500base-x" 的结果逐位一致。字段定义: rtl8373_reg_definition.h:2958-2965。换 10G 光模块
 	 *         请把本项改回 "10g-kr"。
-	 *  - 运行时等价命令 (只影响 SFP+ 口, 不影响 LAN): swconfig dev switch0 set serdes1_force_mode 22;
-	 *         解除强设: swconfig dev switch0 set serdes1_force_mode 1。
+	 *  - 运行时等价命令 —— 2026-10-08 实机验证通过 (只影响 SFP+ 口, LAN 全程无损):
+	 *         T+1s Serdes1 0x1a→0x16, T+5s port:8 link:up speed:2500 full-duplex, 期间 port 4/eth1
+	 *         保持 2500 且 SSH 不断。swconfig dev switch0 set serdes1_force_mode 22;
+	 *         解除强设: swconfig dev switch0 set serdes1_force_mode 1。**不持久**, 重启回落本 DTS 值;
+	 *         切换瞬间 SFP+ 掉一次链路 (驱动内部 OFF→20ms→mode→20ms), 不需要 serdes_reset。
 	 *  - 10G 光模块需接对端设备才有 link (无对端无 link 属正常)。
 	 *  - reset-gpios: pio8 GPIO_ACTIVE_HIGH — 官方 DTS mediatek,reset-pin=<&pio 8 0>;
 	 *        运行态 debugfs gpio-520 "mediatek,reset-pin" out hi (高=运行)。
