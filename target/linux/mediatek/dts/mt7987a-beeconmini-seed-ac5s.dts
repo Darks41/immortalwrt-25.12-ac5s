@@ -223,16 +223,23 @@
 	 *  - rtl837x,cpu-port = 7: 官方 dmesg "<rtl8373> port:7 link UP - 2.5Gbps";
 	 *        上行 gmac1→phy15(内部 2.5G 铜 PHY)→交换芯片电口 7; 且 SDS0/1 均
 	 *        配置为 10G 模式 (非上行)。CPU 口不是 serdes 口, 驱动会跳过 serdes 复位。
-	 *  - rtl837x,sds0mode: 2026-10-07 本地改为 "2500base-x" (SDS0 mode=0x16), 目标 SFP+ 2.5G。
-	 *        原值 "10g-qxg": 运行态 0x7B20=0x0b4d, SDS0 mode=0xD (10GUSXG) + sub-mode 2
-	 *        — 与开放驱动 "10g-qxg" 写入的字节完全一致 (SDS0 接 RTL8224N 10G PHY → SFP+ 笼)。
-	 *  - 为什么改在 DTS 而不是运行期 swconfig: 2026-10-07 实机三轮验证, 运行期改 SDS0 模式
-	 *        (swconfig serdes0_force_mode 22, 或 debugfs 直写 0x7B20=0x356) 都会让交换芯片
-	 *        停止转发 —— 各口 link 仍显示 up 但双向不通, 只能重启, 重启又回退 10G。
-	 *        开机期由 rtl837x_mdio.c:482 rtk_sdsMode_set(0, gsw->sds0mode) 最后写入 0x7B20
-	 *        bits[4:0], 是既有正常路径 (每次开机本就两次改 SDS0)。详见工作记录 §2.26。
-	 *  - 10G 光模块需接对端设备才有 link (无对端无 link 属正常); 2.5G 模块需本项改 2500base-x。
-	 *  - rtl837x,sds1mode = "10g-kr": 运行态 SDS1 mode=0x1A (10GR)。
+	 *  - rtl837x,sds0mode = "10g-qxg" (不是 SFP+ 口, 不要改): 运行态 0x7B20 bits[4:0]=0xD (10GUSXG)
+	 *         + sub-mode 2。SDS0 接 RTL8224N → 4 个 RJ45 LAN 口。2026-10-07 刷机实测: 曾把它改成
+	 *         "2500base-x" 想让 SFP+ 跑 2.5G — 结果 LAN 口全部不通 (电脑插 LAN 口连不上设备)。
+	 *         运行期用 swconfig serdes0_force_mode 22 或 debugfs 直写 0x7B20=0x356 同样会打死转发
+	 *         (各口 link 仍显示 up 但双向不通, 只能重启才恢复)。
+	 *  - SFP+ 笼 = SDS1: 驱动 rtl837x_mdio.c:608-663 rtl837x_sfp_module_insert/remove 只操作 SDS1
+	 *         (10GBASER→10GR, 2500BASEX→2500BASEX, 1000BASEX/SGMII→1000BASEX, 100BASEX→100FX, 拔除→OFF)。
+	 *         本 DTS 里没有 sff,sfp 节点 → 模块识别不工作 → SFP+ 只用 DTS 初值 sds1mode, 不协商速率。
+	 *  - rtl837x,sds1mode = "2500base-x" (2026-10-07 由 "10g-kr" 改, 让 SFP+ 跑 2.5G): 官方固件同项对照
+	 *         (官方把 SFP+ 速率设成 2.5G 后, 经 /dev/bm-mdio 邮箱读回): 0x7B20 = 0x0acd → SDS1
+	 *         bits[9:5]=0x16 (2500BASEX), SDS1 sub-mode bits[19:16]=0, SDS0 不变 (0xD); 官方 10G 时为
+	 *         0x0b4d (SDS1=0x1A=10GR)。0x0b4d 只把 SDS1 字段换成 0x16 恰好 = 0x0acd, 与开放驱动写
+	 *         "2500base-x" 的结果逐位一致。字段定义: rtl8373_reg_definition.h:2958-2965。换 10G 光模块
+	 *         请把本项改回 "10g-kr"。
+	 *  - 运行时等价命令 (只影响 SFP+ 口, 不影响 LAN): swconfig dev switch0 set serdes1_force_mode 22;
+	 *         解除强设: swconfig dev switch0 set serdes1_force_mode 1。
+	 *  - 10G 光模块需接对端设备才有 link (无对端无 link 属正常)。
 	 *  - reset-gpios: pio8 GPIO_ACTIVE_HIGH — 官方 DTS mediatek,reset-pin=<&pio 8 0>;
 	 *        运行态 debugfs gpio-520 "mediatek,reset-pin" out hi (高=运行)。
 	 *  - 总线 0x13 有一个未用响应者 (r2=0x1a75, 非邮箱设备), 官方固件不访问;
@@ -244,8 +251,8 @@
 		reg = <29>;
 		reset-gpios = <&pio 8 GPIO_ACTIVE_HIGH>;
 		rtl837x,cpu-port = <7>;
-		rtl837x,sds0mode = "2500base-x";
-		rtl837x,sds1mode = "10g-kr";
+		rtl837x,sds0mode = "10g-qxg";
+		rtl837x,sds1mode = "2500base-x";
 		ethernet = <&gmac1>;
 		status = "okay";
 		/*
