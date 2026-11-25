@@ -410,7 +410,12 @@ return baseclass.extend({
 	load() {
 		return Promise.all([
 			L.resolveDefault(callGetBuiltinEthernetPorts(), []),
-			fs.read('/etc/board.json', '{}'),
+			// /etc/board.json is a symlink to /tmp/sysinfo/board.json and rpcd
+			// matches file ACLs against the symlink target (granted by
+			// files/usr/share/rpcd/acl.d/ac5s.json). Keep this read non-fatal:
+			// a rejected promise here would make index.js mark the whole
+			// "Port status" section as failed and hide it completely.
+			L.resolveDefault(fs.read('/etc/board.json'), '{}'),
 			firewall.getZones(),
 			network.getNetworks(),
 			uci.load('network')

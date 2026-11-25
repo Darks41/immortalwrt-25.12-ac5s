@@ -4,6 +4,10 @@
 		"read": {
 			"ubus": {
 				"ac5s": [ "getSwconfigMib" ]
+			},
+			"file": {
+				"/etc/board.json": [ "read" ],
+				"/tmp/sysinfo/board.json": [ "read" ]
 			}
 		}
 	}
